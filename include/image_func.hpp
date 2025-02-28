@@ -6,5 +6,10 @@
 #include <opencv2/highgui.hpp>
 
 void display_image(const char *image_path);
+void display_image(cv::Mat image);
+
+// dft of image
+cv::Mat dft_calc(const char *image_path);
+cv::Mat dft_calc(cv::Mat image);
 
 #endif // IMAGE_FUNC_HPP

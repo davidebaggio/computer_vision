@@ -1,6 +1,6 @@
 #all for opencv project
 
-CC = c++
+CC = g++
 CFLAGS = -Wall -Wextra -ggdb
 LDFLAGS = -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs
 
