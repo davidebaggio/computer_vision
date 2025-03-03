@@ -86,22 +86,22 @@ cv::Mat dft_calc(const char *image_path)
 	return dft_calc(image);
 }
 
-void profile_of_row(cv::Mat &image, int row)
+cv::Mat profile_of_row(cv::Mat &image, int row)
 {
 	if (image.empty())
 	{
 		std::cout << "Could not open or find the image" << std::endl;
-		return;
+		return cv::Mat();
 	}
 	if (row < 0 || row >= image.rows)
 	{
 		std::cout << "Row out of bounds" << std::endl;
-		return;
+		return cv::Mat();
 	}
 	if (image.channels() > 1)
 	{
 		printf("Cannot profile row of multi-channel image\n");
-		return;
+		return cv::Mat();
 	}
 
 	cv::Mat profile_image = cv::Mat::zeros(255, image.rows, CV_8UC1);
@@ -111,10 +111,10 @@ void profile_of_row(cv::Mat &image, int row)
 		profile_image.at<uchar>(pixel_intensity, i) = 255;
 	}
 
-	display_image(profile_image);
+	return profile_image;
 }
 
-void profile_of_row(const char *image_path, int row)
+cv::Mat profile_of_row(const char *image_path, int row)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
 	if (image.empty())
@@ -122,10 +122,10 @@ void profile_of_row(const char *image_path, int row)
 		std::cout << "Could not open or find the image" << std::endl;
 		return;
 	}
-	profile_of_row(image, row);
+	return profile_of_row(image, row);
 }
 
-cv::Mat apply_transformation(cv::Mat image, uchar (*transformation)(const uchar &pixel))
+cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar &pixel))
 {
 	if (image.empty())
 	{
