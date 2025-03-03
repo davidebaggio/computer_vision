@@ -29,6 +29,17 @@ void display_image(cv::Mat image)
 	cv::waitKey(0);
 }
 
+size_t get_num_channels(const char *image_path)
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
+	if (image.empty())
+	{
+		std::cout << "Could not open or find the image" << std::endl;
+		return 0;
+	}
+	return image.channels();
+}
+
 cv::Mat dft_calc(cv::Mat image)
 {
 	double min, max;
@@ -73,4 +84,79 @@ cv::Mat dft_calc(const char *image_path)
 		return cv::Mat();
 	}
 	return dft_calc(image);
+}
+
+void profile_of_row(cv::Mat &image, int row)
+{
+	if (image.empty())
+	{
+		std::cout << "Could not open or find the image" << std::endl;
+		return;
+	}
+	if (row < 0 || row >= image.rows)
+	{
+		std::cout << "Row out of bounds" << std::endl;
+		return;
+	}
+	if (image.channels() > 1)
+	{
+		printf("Cannot profile row of multi-channel image\n");
+		return;
+	}
+
+	cv::Mat profile_image = cv::Mat::zeros(255, image.rows, CV_8UC1);
+	for (size_t i = 0; i < image.cols; i++)
+	{
+		uchar pixel_intensity = image.at<uchar>(row, i);
+		profile_image.at<uchar>(pixel_intensity, i) = 255;
+	}
+
+	display_image(profile_image);
+}
+
+void profile_of_row(const char *image_path, int row)
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+	if (image.empty())
+	{
+		std::cout << "Could not open or find the image" << std::endl;
+		return;
+	}
+	profile_of_row(image, row);
+}
+
+cv::Mat apply_transformation(cv::Mat image, uchar (*transformation)(const uchar &pixel))
+{
+	if (image.empty())
+	{
+		std::cout << "Could not open or find the image" << std::endl;
+		return cv::Mat();
+	}
+	if (image.channels() > 1)
+	{
+		printf("Cannot apply transformation to multi-channel image\n");
+		return cv::Mat();
+	}
+
+	cv::Mat transformed_image = cv::Mat::zeros(image.size(), image.type());
+
+	for (size_t i = 0; i < transformed_image.rows; i++)
+	{
+		for (size_t j = 0; j < transformed_image.cols; j++)
+		{
+			transformed_image.at<uchar>(i, j) = transformation(image.at<uchar>(i, j));
+		}
+	}
+	return transformed_image;
+}
+
+cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(const uchar &pixel))
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+	if (image.empty())
+	{
+		std::cout << "Could not open or find the image" << std::endl;
+		return cv::Mat();
+	}
+	return apply_transformation(image, transformation);
 }
