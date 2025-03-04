@@ -1,6 +1,6 @@
 #include "image_func.hpp"
 
-void display_image(const char *image_path)
+void display_image(const char *image_path, const char *window_name)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
 	if (image.empty())
@@ -8,36 +8,22 @@ void display_image(const char *image_path)
 		std::cout << "Could not open or find the image" << std::endl;
 		return;
 	}
-	printf("Image size: %d x %d\n", image.cols, image.rows);
-	cv::namedWindow("Display window", cv::WINDOW_GUI_NORMAL);
-	printf("Window created\n");
-	cv::imshow("Display window", image);
-	cv::waitKey(0);
+	display_image(image, window_name);
 }
 
-void display_image(cv::Mat image)
+void display_image(cv::Mat image, const char *window_name)
 {
 	if (image.empty())
 	{
 		std::cout << "Could not open or find the image" << std::endl;
 		return;
 	}
-	printf("Image size: %d x %d\n", image.cols, image.rows);
+	printf("| Image size: %d x %d\n", image.cols, image.rows);
 	cv::namedWindow("Display window", cv::WINDOW_GUI_NORMAL);
-	printf("Window created\n");
+	printf("| %s image created\n", window_name);
+	printf("----------------------------\n");
 	cv::imshow("Display window", image);
 	cv::waitKey(0);
-}
-
-size_t get_num_channels(const char *image_path)
-{
-	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
-	if (image.empty())
-	{
-		std::cout << "Could not open or find the image" << std::endl;
-		return 0;
-	}
-	return image.channels();
 }
 
 cv::Mat dft_calc(cv::Mat image)
@@ -120,12 +106,12 @@ cv::Mat profile_of_row(const char *image_path, int row)
 	if (image.empty())
 	{
 		std::cout << "Could not open or find the image" << std::endl;
-		return;
+		return cv::Mat();
 	}
 	return profile_of_row(image, row);
 }
 
-cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar &pixel))
+cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param)
 {
 	if (image.empty())
 	{
@@ -144,13 +130,25 @@ cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar
 	{
 		for (size_t j = 0; j < transformed_image.cols; j++)
 		{
-			transformed_image.at<uchar>(i, j) = transformation(image.at<uchar>(i, j));
+			uchar pixel_intensity = image.at<uchar>(i, j);
+			if (pixel_intensity < param.basex)
+			{
+				transformed_image.at<uchar>(i, j) = linear_transform(image.at<uchar>(i, j), PARAM(0, 0, param.basex, param.basey, param.param));
+			}
+			else if (pixel_intensity < param.targetx)
+			{
+				transformed_image.at<uchar>(i, j) = transformation(image.at<uchar>(i, j), param);
+			}
+			else
+			{
+				transformed_image.at<uchar>(i, j) = linear_transform(image.at<uchar>(i, j), PARAM(param.targetx, param.targety, 255, 255, param.param));
+			}
 		}
 	}
 	return transformed_image;
 }
 
-cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(const uchar &pixel))
+cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
 	if (image.empty())
@@ -158,5 +156,5 @@ cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(con
 		std::cout << "Could not open or find the image" << std::endl;
 		return cv::Mat();
 	}
-	return apply_transformation(image, transformation);
+	return apply_transformation(image, transformation, param);
 }
