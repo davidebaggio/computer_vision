@@ -3,11 +3,7 @@
 void display_image(const char *image_path, const char *window_name)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
-	if (image.empty())
-	{
-		std::cout << "Could not open or find the image" << std::endl;
-		return;
-	}
+
 	display_image(image, window_name);
 }
 
@@ -28,6 +24,11 @@ void display_image(cv::Mat image, const char *window_name)
 
 cv::Mat dft_calc(cv::Mat image)
 {
+	if (image.empty())
+	{
+		printf("Could not open or find the image\n");
+		return cv::Mat();
+	}
 	double min, max;
 	cv::minMaxLoc(image, &min, &max);
 	cv::Mat padded;
@@ -64,11 +65,7 @@ cv::Mat dft_calc(cv::Mat image)
 cv::Mat dft_calc(const char *image_path)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-	if (image.empty())
-	{
-		printf("Could not open or find the image\n");
-		return cv::Mat();
-	}
+
 	return dft_calc(image);
 }
 
@@ -103,11 +100,7 @@ cv::Mat profile_of_row(cv::Mat &image, int row)
 cv::Mat profile_of_row(const char *image_path, int row)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-	if (image.empty())
-	{
-		std::cout << "Could not open or find the image" << std::endl;
-		return cv::Mat();
-	}
+
 	return profile_of_row(image, row);
 }
 
@@ -151,10 +144,44 @@ cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar
 cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-	if (image.empty())
+
+	return apply_transformation(image, transformation, param);
+}
+
+cv::Mat images_diff(const char *image_path1, const char *image_path2)
+{
+	cv::Mat image1 = cv::imread(image_path1, cv::IMREAD_GRAYSCALE);
+	cv::Mat image2 = cv::imread(image_path2, cv::IMREAD_GRAYSCALE);
+
+	return images_diff(image1, image2);
+}
+
+cv::Mat images_diff(cv::Mat &image1, cv::Mat &image2)
+{
+	if (image1.empty() || image2.empty())
 	{
-		std::cout << "Could not open or find the image" << std::endl;
+		std::cout << "Could not open or find images" << std::endl;
 		return cv::Mat();
 	}
-	return apply_transformation(image, transformation, param);
+	if (image1.size != image2.size)
+	{
+		std::cout << "Image size are different. Cannot produce the difference" << std::endl;
+		return cv::Mat();
+	}
+	if (image1.channels() > 1 || image2.channels() > 1)
+	{
+		printf("Cannot calculate diff of multi-channel images\n");
+		return cv::Mat();
+	}
+	cv::Mat diff_image = cv::Mat::zeros(image1.size(), image1.type());
+
+	for (size_t i = 0; i < image1.rows; i++)
+	{
+		for (size_t j = 0; j < image1.cols; j++)
+		{
+			diff_image.at<uchar>(i, j) = abs(image1.at<uchar>(i, j) - image2.at<uchar>(i, j));
+		}
+	}
+
+	return diff_image;
 }

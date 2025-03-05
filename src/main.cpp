@@ -5,19 +5,33 @@ int main(int argc, char **argv)
 {
 	if (argc != 2)
 	{
-		printf("Usage: ./main <image_path>\n");
+		printf("Usage: ./opencv_test <image_path>\n");
 		return 1;
 	}
 	printf("\nOpenCV version: %s\n", CV_VERSION);
 	printf("----------------------------\n");
-	display_image(argv[1], "original");
+	const char *image_path = argv[1];
+	// display_image(image_path, "original");
 
-	display_image(apply_transformation(argv[1], negate_pixel, NOPARAM), "Negate");
-	display_image(apply_transformation(argv[1], log_transform, PARAM(0, 0, 255, 255, NONE)), "Log");
-	display_image(apply_transformation(argv[1], gamma_transform, DEFPARAM(0.04)), "gamma-0.04");
-	display_image(apply_transformation(argv[1], gamma_transform, PARAM(96, 32, 160, 224, 0.04)), "Contrast-stretching with gamma-0.04");
-	display_image(apply_transformation(argv[1], threshold_transform, DEFPARAM(127)), "Threshold-127");
-	display_image(apply_transformation(argv[1], linear_transform, PARAM(96, 32, 160, 224, NONE)), "Contrast-stretching");
-	display_image(apply_transformation(argv[1], log_transform, PARAM(96, 32, 160, 224, NONE)), "Contrast-stretching with log-transform");
+	cv::Mat gray_scale_original = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+	display_image(gray_scale_original, "Gray scale original");
+	cv::Mat negated = apply_transformation(gray_scale_original, negate_transform, DEFPARAM(NONE));
+	display_image(negated, "Negate");
+	display_image(images_diff(gray_scale_original, negated), "gray-scale/negate difference");
+
+	cv::Mat log = apply_transformation(image_path, log_transform, DEFPARAM(NONE));
+	display_image(log, "Log");
+	cv::Mat cs_log = apply_transformation(image_path, log_transform, PARAM(96, 32, 160, 224, NONE));
+	display_image(cs_log, "Contrast-stretching with log-transform");
+	display_image(images_diff(log, cs_log), "Log/Constrast-stretching-Log difference");
+
+	cv::Mat gamma = apply_transformation(image_path, gamma_transform, DEFPARAM(0.04));
+	display_image(gamma, "gamma-0.04");
+
+	cv::Mat thresh_127 = apply_transformation(image_path, threshold_transform, DEFPARAM(127));
+	display_image(thresh_127, "Threshold-127");
+
+	cv::Mat cs_linear = apply_transformation(image_path, linear_transform, PARAM(96, 32, 160, 224, NONE));
+	display_image(cs_linear, "Contrast-stretching");
 	return 0;
 }

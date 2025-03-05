@@ -20,7 +20,7 @@ typedef struct ParamSet
 bool is_default_param(ParamSet param);
 
 // transormation function
-uchar negate_pixel(const uchar &pixel, ParamSet param);
+uchar negate_transform(const uchar &pixel, ParamSet param);
 uchar log_transform(const uchar &pixel, ParamSet param);
 uchar gamma_transform(const uchar &pixel, ParamSet param);
 uchar threshold_transform(const uchar &pixel, ParamSet param);

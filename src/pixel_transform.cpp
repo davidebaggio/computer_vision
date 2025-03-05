@@ -8,7 +8,7 @@ bool is_default_param(ParamSet param)
 		return true;
 }
 
-uchar negate_pixel(const uchar &pixel, ParamSet param)
+uchar negate_transform(const uchar &pixel, ParamSet param)
 {
 	(void)param;
 	return (uchar)(255 - pixel);

@@ -16,6 +16,9 @@ cv::Mat profile_of_row(cv::Mat &image, int row);
 cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param);
 cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param);
 
+cv::Mat images_diff(const char *image_path1, const char *image_path2);
+cv::Mat images_diff(cv::Mat &image1, cv::Mat &image2);
+
 // dft of image
 cv::Mat dft_calc(const char *image_path);
 cv::Mat dft_calc(cv::Mat image);
