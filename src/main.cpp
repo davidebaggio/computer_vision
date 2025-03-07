@@ -33,5 +33,9 @@ int main(int argc, char **argv)
 
 	cv::Mat cs_linear = apply_transformation(image_path, linear_transform, PARAM(96, 32, 160, 224, NONE));
 	display_image(cs_linear, "Contrast-stretching");
+
+	cv::Mat original_histogram = image_histogram(gray_scale_original);
+	display_image(original_histogram, "original histogram");
+
 	return 0;
 }

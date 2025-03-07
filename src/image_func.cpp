@@ -11,7 +11,7 @@ void display_image(cv::Mat image, const char *window_name)
 {
 	if (image.empty())
 	{
-		std::cout << "Could not open or find the image" << std::endl;
+		printf("Could not open or find the image\n");
 		return;
 	}
 	printf("| Image size: %d x %d\n", image.cols, image.rows);
@@ -73,12 +73,12 @@ cv::Mat profile_of_row(cv::Mat &image, int row)
 {
 	if (image.empty())
 	{
-		std::cout << "Could not open or find the image" << std::endl;
+		printf("Could not open or find the image\n");
 		return cv::Mat();
 	}
 	if (row < 0 || row >= image.rows)
 	{
-		std::cout << "Row out of bounds" << std::endl;
+		printf("Row out of bounds\n");
 		return cv::Mat();
 	}
 	if (image.channels() > 1)
@@ -104,11 +104,86 @@ cv::Mat profile_of_row(const char *image_path, int row)
 	return profile_of_row(image, row);
 }
 
+size_t *intensity_freq(cv::Mat &image)
+{
+	if (image.empty())
+	{
+		printf("Could not open or find the image\n");
+		return NULL;
+	}
+	if (image.channels() > 1)
+	{
+		printf("Cannot calculate histogram to multi-channel image\n");
+		return NULL;
+	}
+
+	size_t *freq = (size_t *)malloc(256 * sizeof(size_t));
+	int intensity_count[256];
+	for (size_t i = 0; i < 256; i++)
+	{
+		intensity_count[i] = 0;
+	}
+	for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			intensity_count[image.at<uchar>(i, j)] += 1;
+		}
+	}
+	for (size_t i = 0; i < 256; i++)
+	{
+		freq[i] = (size_t)(((float)intensity_count[i] / (image.rows * image.cols)) * 255);
+	}
+	return freq;
+}
+
+size_t *intensity_freq(const char *image_path)
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+	return intensity_freq(image);
+}
+
+cv::Mat image_histogram(cv::Mat &image)
+{
+	if (image.empty())
+	{
+		printf("Could not open or find the image\n");
+		return cv::Mat();
+	}
+	if (image.channels() > 1)
+	{
+		printf("Cannot calculate histogram to multi-channel image\n");
+		return cv::Mat();
+	}
+
+	size_t *freq = intensity_freq(image);
+
+	cv::Mat histogram = cv::Mat::zeros(cv::Size2i(256, 256), image.type());
+	for (size_t j = 0; j < histogram.cols; j++)
+	{
+		size_t inv_perc = 255 - freq[j];
+		for (size_t i = 0; i < histogram.rows; i++)
+		{
+			if (i < inv_perc)
+				continue;
+			histogram.at<uchar>(i, j) = 255;
+		}
+	}
+	free(freq);
+	return histogram;
+}
+
+cv::Mat image_histogram(const char *image_path)
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+	return image_histogram(image);
+}
+
 cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param)
 {
 	if (image.empty())
 	{
-		std::cout << "Could not open or find the image" << std::endl;
+		printf("Could not open or find the image\n");
 		return cv::Mat();
 	}
 	if (image.channels() > 1)
@@ -160,12 +235,12 @@ cv::Mat images_diff(cv::Mat &image1, cv::Mat &image2)
 {
 	if (image1.empty() || image2.empty())
 	{
-		std::cout << "Could not open or find images" << std::endl;
+		printf("Could not open or find images\n");
 		return cv::Mat();
 	}
 	if (image1.size != image2.size)
 	{
-		std::cout << "Image size are different. Cannot produce the difference" << std::endl;
+		printf("Image size are different. Cannot produce the difference\n");
 		return cv::Mat();
 	}
 	if (image1.channels() > 1 || image2.channels() > 1)

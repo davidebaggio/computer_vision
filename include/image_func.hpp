@@ -13,6 +13,12 @@ void display_image(cv::Mat image, const char *window_name);
 cv::Mat profile_of_row(const char *image_path, int row);
 cv::Mat profile_of_row(cv::Mat &image, int row);
 
+size_t *intensity_freq(const char *image_path);
+size_t *intensity_freq(cv::Mat &image);
+
+cv::Mat image_histogram(const char *image_path);
+cv::Mat image_histogram(cv::Mat &image);
+
 cv::Mat apply_transformation(const char *image_path, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param);
 cv::Mat apply_transformation(cv::Mat &image, uchar (*transformation)(const uchar &pixel, ParamSet param), ParamSet param);
 
