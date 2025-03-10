@@ -22,53 +22,6 @@ void display_image(cv::Mat image, const char *window_name)
 	cv::waitKey(0);
 }
 
-cv::Mat dft_calc(cv::Mat image)
-{
-	if (image.empty())
-	{
-		printf("Could not open or find the image\n");
-		return cv::Mat();
-	}
-	double min, max;
-	cv::minMaxLoc(image, &min, &max);
-	cv::Mat padded;
-	int m = cv::getOptimalDFTSize(image.rows);
-	int n = cv::getOptimalDFTSize(image.cols);
-	cv::copyMakeBorder(image, padded, 0, m - image.rows, 0, n - image.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
-	cv::Mat planes[] = {cv::Mat_<float>(padded), cv::Mat::zeros(padded.size(), CV_32F)};
-	cv::Mat complex_image;
-	cv::merge(planes, 2, complex_image);
-	cv::dft(complex_image, complex_image);
-	cv::split(complex_image, planes);
-	cv::magnitude(planes[0], planes[1], planes[0]);
-	cv::Mat mag_image = planes[0];
-	mag_image += cv::Scalar::all(1);
-	cv::log(mag_image, mag_image);
-	mag_image = mag_image(cv::Rect(0, 0, mag_image.cols & -2, mag_image.rows & -2));
-	int cx = mag_image.cols / 2;
-	int cy = mag_image.rows / 2;
-	cv::Mat q0(mag_image, cv::Rect(0, 0, cx, cy));
-	cv::Mat q1(mag_image, cv::Rect(cx, 0, cx, cy));
-	cv::Mat q2(mag_image, cv::Rect(0, cy, cx, cy));
-	cv::Mat q3(mag_image, cv::Rect(cx, cy, cx, cy));
-	cv::Mat tmp;
-	q0.copyTo(tmp);
-	q3.copyTo(q0);
-	tmp.copyTo(q3);
-	q1.copyTo(tmp);
-	q2.copyTo(q1);
-	tmp.copyTo(q2);
-	cv::normalize(mag_image, mag_image, 0, 1, cv::NORM_MINMAX);
-	return mag_image;
-}
-
-cv::Mat dft_calc(const char *image_path)
-{
-	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-
-	return dft_calc(image);
-}
-
 cv::Mat profile_of_row(cv::Mat &image, int row)
 {
 	if (image.empty())
@@ -259,4 +212,207 @@ cv::Mat images_diff(cv::Mat &image1, cv::Mat &image2)
 	}
 
 	return diff_image;
+}
+
+cv::Mat gaussian_noise(const cv::Mat &src, float mean, float std)
+{
+	cv::Mat g = src.clone();
+	cv::Mat noise = cv::Mat(g.size(), g.type());
+	cv::randn(noise, mean, std);
+
+	return g + noise;
+}
+
+cv::Mat salt_noise(const cv::Mat &src, float prob)
+{
+	cv::Mat s = src.clone();
+	for (size_t i = 0; i < s.rows; i++)
+	{
+		for (size_t j = 0; j < s.cols; j++)
+		{
+			float p = (float)rand() / RAND_MAX;
+			if (p < prob)
+				s.at<uchar>(i, j) = 255;
+		}
+	}
+	return s;
+}
+
+cv::Mat pepper_noise(const cv::Mat &src, float prob)
+{
+	cv::Mat s = src.clone();
+	for (size_t i = 0; i < s.rows; i++)
+	{
+		for (size_t j = 0; j < s.cols; j++)
+		{
+			float p = (float)rand() / RAND_MAX;
+			if (p < prob)
+				s.at<uchar>(i, j) = 0;
+		}
+	}
+	return s;
+}
+
+cv::Mat salt_pepper_noise(const cv::Mat &src, float prob)
+{
+	cv::Mat s = src.clone();
+	for (size_t i = 0; i < s.rows; i++)
+	{
+		for (size_t j = 0; j < s.cols; j++)
+		{
+			float p = (float)rand() / RAND_MAX;
+			if (p < prob)
+			{
+				p = (float)rand() / RAND_MAX;
+				if (p < 0.5)
+					s.at<uchar>(i, j) = 0;
+				else
+					s.at<uchar>(i, j) = 255;
+			}
+		}
+	}
+	return s;
+}
+
+void apply_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel, void (*filter_type)(cv::Mat &src, cv::Mat &dst, cv::Mat kernel))
+{
+	if (kernel.type() != CV_32F)
+	{
+		printf("Unknown type of kernel\n");
+		return;
+	}
+
+	filter_type(src, dst, kernel);
+}
+
+void agv_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	float kernel_sum = 0;
+	for (size_t i = 0; i < kernel.rows; i++)
+	{
+		for (size_t j = 0; j < kernel.cols; j++)
+		{
+			kernel_sum += kernel.at<float>(i, j);
+		}
+	}
+	for (size_t i = 0; i < kernel.rows; i++)
+	{
+		for (size_t j = 0; j < kernel.cols; j++)
+		{
+			kernel.at<float>(i, j) /= kernel_sum;
+		}
+	}
+
+	cv::filter2D(src, dst, -1, kernel);
+}
+
+void linear_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	cv::filter2D(src, dst, -1, kernel);
+}
+
+void mean_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	dst = cv::Mat::zeros(cv::Size2i(src.cols, src.rows), src.type());
+	int deltay = kernel.rows / 2;
+	int deltax = kernel.cols / 2;
+
+	for (int i = 0; i < src.rows; i++)
+	{
+		for (int j = 0; j < src.cols; j++)
+		{
+			uint sum = 0;
+			uint used_size = 0;
+			for (int k = -deltay; k <= deltay; k++)
+			{
+				for (int l = -deltax; l <= deltax; l++)
+				{
+					if (i + k < 0 || i + k >= src.rows || j + l < 0 || j + l >= src.cols)
+						continue;
+					sum += src.at<uchar>(i + k, j + l);
+					used_size++;
+				}
+			}
+			dst.at<uchar>(i, j) = sum / used_size;
+		}
+	}
+}
+
+void min_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	dst = cv::Mat::zeros(cv::Size2i(src.cols, src.rows), src.type());
+	int deltay = kernel.rows / 2;
+	int deltax = kernel.cols / 2;
+
+	for (int i = 0; i < src.rows; i++)
+	{
+		for (int j = 0; j < src.cols; j++)
+		{
+			uchar min = UCHAR_MAX;
+			for (int k = -deltay; k <= deltay; k++)
+			{
+				for (int l = -deltax; l <= deltax; l++)
+				{
+					if (i + k < 0 || i + k >= src.rows || j + l < 0 || j + l >= src.cols)
+						continue;
+					if (src.at<uchar>(i + k, j + l) < min)
+						min = src.at<uchar>(i + k, j + l);
+				}
+			}
+			dst.at<uchar>(i, j) = min;
+		}
+	}
+}
+void max_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	dst = cv::Mat::zeros(cv::Size2i(src.cols, src.rows), src.type());
+	int deltay = kernel.rows / 2;
+	int deltax = kernel.cols / 2;
+
+	for (int i = 0; i < src.rows; i++)
+	{
+		for (int j = 0; j < src.cols; j++)
+		{
+			uchar max = 0;
+			for (int k = -deltay; k <= deltay; k++)
+			{
+				for (int l = -deltax; l <= deltax; l++)
+				{
+					if (i + k < 0 || i + k >= src.rows || j + l < 0 || j + l >= src.cols)
+						continue;
+					if (src.at<uchar>(i + k, j + l) > max)
+						max = src.at<uchar>(i + k, j + l);
+				}
+			}
+			dst.at<uchar>(i, j) = max;
+		}
+	}
+}
+void median_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	dst = cv::Mat::zeros(cv::Size2i(src.cols, src.rows), src.type());
+	int deltay = kernel.rows / 2;
+	int deltax = kernel.cols / 2;
+
+	for (int i = 0; i < src.rows; i++)
+	{
+		for (int j = 0; j < src.cols; j++)
+		{
+			std::vector<uchar> pixels;
+			for (int k = -deltay; k <= deltay; k++)
+			{
+				for (int l = -deltax; l <= deltax; l++)
+				{
+					if (i + k < 0 || i + k >= src.rows || j + l < 0 || j + l >= src.cols)
+						continue;
+					pixels.push_back(src.at<uchar>(i + k, j + l));
+				}
+			}
+			std::sort(pixels.begin(), pixels.end());
+			if (pixels.size() % 2 != 0)
+				dst.at<uchar>(i, j) = pixels.at(pixels.size() / 2);
+			else
+				dst.at<uchar>(i, j) = (pixels.at(pixels.size() / 2) + pixels.at(pixels.size() / 2 + 1)) / 2;
+		}
+	}
 }
