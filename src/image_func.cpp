@@ -96,6 +96,101 @@ size_t *intensity_freq(const char *image_path)
 	return intensity_freq(image);
 }
 
+cv::Mat set_channel_to_zero(const cv::Mat &image, int channel)
+{
+	const int c = image.channels();
+	if (channel >= c)
+	{
+		printf("[ERROR]: channel provided exceeds the number of channels in image\n");
+		return cv::Mat();
+	}
+
+	cv::Mat modified = image.clone();
+	for (size_t i = 0; i < modified.rows; i++)
+	{
+		for (size_t j = 0; j < modified.cols; j++)
+		{
+			if (c == 1)
+			{
+				modified.at<uchar>(i, j) = 0;
+			}
+			else if (c == 2)
+			{
+				modified.at<cv::Vec<uchar, 2>>(i, j)[channel] = 0;
+			}
+			else if (c == 3)
+			{
+				modified.at<cv::Vec<uchar, 3>>(i, j)[channel] = 0;
+			}
+			else
+			{
+				modified.at<cv::Vec<uchar, 4>>(i, j)[channel] = 0;
+			}
+		}
+	}
+	return modified;
+}
+
+std::vector<cv::Mat> split_channels(const cv::Mat &image)
+{
+	std::vector<cv::Mat> splitted_image(image.channels());
+	cv::split(image, splitted_image);
+
+	return splitted_image;
+}
+
+cv::Mat v_gradient()
+{
+	cv::Mat image = cv::Mat(cv::Size2i(256, 256), CV_8U);
+	for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			image.at<uchar>(i, j) = i;
+		}
+	}
+
+	return image;
+}
+
+cv::Mat h_gradient()
+{
+	cv::Mat image = cv::Mat(cv::Size2i(256, 256), CV_8U);
+	for (size_t j = 0; j < image.cols; j++)
+	{
+		for (size_t i = 0; i < image.rows; i++)
+		{
+			image.at<uchar>(i, j) = j;
+		}
+	}
+
+	return image;
+}
+
+cv::Mat chessboard(int width, int height, int square_size)
+{
+	if (width % square_size != 0 || height % square_size != 0)
+	{
+		printf("[ERROR]: invalid params for chessboard\n");
+		return cv::Mat();
+	}
+	cv::Mat image = cv::Mat(cv::Size2i(width, height), CV_8U);
+	for (size_t i = 0; i < image.rows; i++)
+	{
+		for (size_t j = 0; j < image.cols; j++)
+		{
+			int row_index = i / square_size;
+			int col_index = j / square_size;
+
+			if ((row_index + col_index) % 2 == 0)
+				image.at<uchar>(i, j) = 0;
+			else
+				image.at<uchar>(i, j) = 255;
+		}
+	}
+	return image;
+}
+
 cv::Mat image_histogram(cv::Mat &image)
 {
 	if (image.empty())
@@ -309,6 +404,19 @@ void agv_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
 void linear_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
 {
 	cv::filter2D(src, dst, -1, kernel);
+}
+
+void sobel_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)
+{
+	cv::Mat grad_x, grad_y;
+	cv::Mat abs_x, abs_y;
+	cv::Sobel(src, grad_x, CV_16S, 1, 0, kernel.rows, 1, 0, cv::BORDER_DEFAULT);
+	cv::Sobel(src, grad_y, CV_16S, 0, 1, kernel.rows, 1, 0, cv::BORDER_DEFAULT);
+
+	cv::convertScaleAbs(grad_x, abs_x);
+	cv::convertScaleAbs(grad_y, abs_y);
+
+	cv::addWeighted(abs_x, 0.5, abs_y, 0.5, 0, dst);
 }
 
 void mean_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel)

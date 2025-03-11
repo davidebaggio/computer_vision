@@ -15,6 +15,8 @@ static float laplacian_terms[] = {0, 1, 0, 1, -4, 1, 0, 1, 0};
 static float laplacian_ext_terms[] = {1, 1, 1, 1, -8, 1, 1, 1, 1};
 static float laplacian_inv_terms[] = {0, -1, 0, -1, 4, -1, 0, -1, 0};
 static float laplacian_ext_inv_terms[] = {-1, -1, -1, -1, 8, -1, -1, -1, -1};
+static float sobelx[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+static float sobely[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
 
 void display_image(const char *image_path, const char *window_name);
 void display_image(cv::Mat image, const char *window_name);
@@ -24,6 +26,13 @@ cv::Mat profile_of_row(cv::Mat &image, int row);
 
 size_t *intensity_freq(const char *image_path);
 size_t *intensity_freq(cv::Mat &image);
+
+cv::Mat set_channel_to_zero(const cv::Mat &image, int channel);
+std::vector<cv::Mat> split_channels(const cv::Mat &image);
+
+cv::Mat v_gradient();
+cv::Mat h_gradient();
+cv::Mat chessboard(int width, int height, int square_size);
 
 cv::Mat image_histogram(const char *image_path);
 cv::Mat image_histogram(cv::Mat &image);
@@ -44,6 +53,7 @@ void apply_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel, void (*filter_type
 // linear filters
 void agv_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel);
 void linear_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel);
+void sobel_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel);
 
 // non-linear filters
 void mean_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel);
