@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 {
 	if (argc < 2)
 	{
-		printf("[ERROR]: not enough arguments provided.\n\tUsage: task1 <image_path>\n");
+		printf("[ERROR]: not enough arguments provided.\n\tUsage: task3 <image_path>\n");
 		return 1;
 	}
 

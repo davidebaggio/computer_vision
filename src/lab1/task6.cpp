@@ -5,7 +5,7 @@ int main(int argc, char **argv)
 {
 	if (argc != 2)
 	{
-		printf("Usage: ./test_filters <image_path>\n");
+		printf("Usage: task5 <image_path>\n");
 		return 1;
 	}
 	printf("\nOpenCV version: %s\n", CV_VERSION);
