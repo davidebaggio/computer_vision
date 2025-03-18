@@ -4,11 +4,13 @@ find_package(OpenCV REQUIRED )
 set(LIB_SRC
     src/image_func.cpp
     src/pixel_transform.cpp
+    src/image_filters.cpp
 )
 
 set(HEADERS
     include/image_func.hpp
     include/pixel_transform.hpp
+    include/image_filters.hpp
 )
 
 add_library(image_lib STATIC ${LIB_SRC} ${HEADERS})
@@ -26,6 +28,12 @@ add_executable( task1.3 src/lab1/task3.cpp )
 add_executable( task1.4 src/lab1/task4.cpp )
 add_executable( task1.5 src/lab1/task5.cpp )
 add_executable( task1.6 src/lab1/task6.cpp )
+add_executable( task2.1 src/lab2/task1.cpp )
+add_executable( task2.2 src/lab2/task2.cpp )
+add_executable( task2.3 src/lab2/task3.cpp )
+add_executable( task2.4 src/lab2/task4.cpp )
+add_executable( task2.5 src/lab2/task5.cpp )
+add_executable( task2.6 src/lab2/task6.cpp )
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
@@ -39,3 +47,9 @@ target_link_libraries(task1.3 image_lib)
 target_link_libraries(task1.4 image_lib)
 target_link_libraries(task1.5 image_lib)
 target_link_libraries(task1.6 image_lib)
+target_link_libraries(task2.1 image_lib)
+target_link_libraries(task2.2 image_lib)
+target_link_libraries(task2.3 image_lib)
+target_link_libraries(task2.4 image_lib)
+target_link_libraries(task2.5 image_lib)
+target_link_libraries(task2.6 image_lib)
