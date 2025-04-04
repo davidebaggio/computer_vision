@@ -1,17 +1,10 @@
 #include "image_func.hpp"
 
-void display_image(const char *image_path, const char *window_name)
-{
-	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
-
-	display_image(image, window_name);
-}
-
 void display_image(cv::Mat image, const char *window_name)
 {
 	if (image.empty())
 	{
-		printf("Could not open or find the image\n");
+		printf("[ERROR]: Could not open or find the image\n");
 		return;
 	}
 	printf("| Image size: %d x %d\n", image.cols, image.rows);
@@ -20,6 +13,35 @@ void display_image(cv::Mat image, const char *window_name)
 	printf("----------------------------\n");
 	cv::imshow("Display window", image);
 	cv::waitKey(0);
+}
+
+void display_image(const char *image_path, const char *window_name)
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
+	display_image(image, window_name);
+}
+
+void interact_display(cv::Mat image, const char *window_name, void (*mouse_callback)(int event, int x, int y, int flags, void *userdata))
+{
+	if (image.empty())
+	{
+		printf("[ERROR]: Could not open or find the image\n");
+		return;
+	}
+
+	printf("| Image size: %d x %d\n", image.cols, image.rows);
+	cv::namedWindow("Display window", cv::WINDOW_GUI_NORMAL);
+	cv::setMouseCallback("Display window", mouse_callback, &image);
+	printf("| %s image created\n", window_name);
+	printf("----------------------------\n");
+	cv::imshow("Display window", image);
+	cv::waitKey(0);
+}
+
+void interact_display(const char *image_path, const char *window_name, void (*mouse_callback)(int event, int x, int y, int flags, void *userdata))
+{
+	cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
+	interact_display(image, window_name, mouse_callback);
 }
 
 cv::Mat profile_of_row(cv::Mat &image, int row)
@@ -428,3 +450,11 @@ std::vector<cv::Point2i> edge_points(const cv::Mat &image)
 	}
 	return std::vector<cv::Point2i>();
 }
+
+/* std::vector<cv::Point2i> mean_shift_clustering(std::vector<cv::Point2i> &points, float radius, int k, int max_iterations)
+{
+	for (size_t i = 0; i < max_iterations; i++)
+	{
+
+	}
+} */

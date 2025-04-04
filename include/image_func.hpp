@@ -26,6 +26,8 @@ static float sobely[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
 
 void display_image(const char *image_path, const char *window_name);
 void display_image(cv::Mat image, const char *window_name);
+void interact_display(const char *image_path, const char *window_name, void (*mouse_callback)(int event, int x, int y, int flags, void *userdata));
+void interact_display(cv::Mat image, const char *window_name, void (*mouse_callback)(int event, int x, int y, int flags, void *userdata));
 
 cv::Mat profile_of_row(const char *image_path, int row);
 cv::Mat profile_of_row(cv::Mat &image, int row);
@@ -58,5 +60,7 @@ cv::Mat salt_pepper_noise(const cv::Mat &src, float prob);
 void apply_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel, void (*filter_type)(cv::Mat &src, cv::Mat &dst, cv::Mat kernel));
 
 std::vector<cv::Point2i> edge_points(const cv::Mat &image);
+
+std::vector<std::vector<cv::Point2i>> mean_shift_clustering(std::vector<cv::Point2i> &points, float radius, int k, int max_iterations);
 
 #endif // IMAGE_FUNC_HPP
