@@ -5,9 +5,11 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <vector>
+#include <algorithm>
 
 #include "pixel_transform.hpp"
 #include "image_filters.hpp"
+#include "trackbar_callbacks.hpp"
 
 #define ZEROS cv::Scalar::all(0)
 #define ONES cv::Scalar::all(1)
@@ -28,6 +30,7 @@ void display_image(const char *image_path, const char *window_name);
 void display_image(cv::Mat image, const char *window_name);
 void interact_display(const char *image_path, const char *window_name, void (*mouse_callback)(int event, int x, int y, int flags, void *userdata));
 void interact_display(cv::Mat image, const char *window_name, void (*mouse_callback)(int event, int x, int y, int flags, void *userdata));
+void interact_trackbars(void (*on_change)(int, void *), TB_args userdata);
 
 cv::Mat profile_of_row(const char *image_path, int row);
 cv::Mat profile_of_row(cv::Mat &image, int row);
@@ -61,6 +64,9 @@ void apply_filter(cv::Mat &src, cv::Mat &dst, cv::Mat kernel, void (*filter_type
 
 std::vector<cv::Point2i> edge_points(const cv::Mat &image);
 
-std::vector<std::vector<cv::Point2i>> mean_shift_clustering(std::vector<cv::Point2i> &points, float radius, int k, int max_iterations);
+std::vector<cv::Point2i> computeIntersections(const cv::Vec2f &line, const cv::Size2i &imgSize);
+
+void poly_in_hough_lines(const cv::Mat &image, const cv::Mat &edges, cv::Mat &dest);
+void poly_in_hough_circles(const cv::Mat &image, const cv::Mat &edges, cv::Mat &dest);
 
 #endif // IMAGE_FUNC_HPP

@@ -72,6 +72,20 @@ cv::Mat profile_of_row(cv::Mat &image, int row)
 	return profile_image;
 }
 
+void interact_trackbars(void (*on_change)(int, void *), TB_args userdata)
+{
+	if (userdata.img.empty())
+	{
+		printf("[ERROR]: Could not open image\n");
+	}
+
+	cv::createTrackbar("Low TRESHOLD", userdata.winname, &(userdata.low_th), userdata.max_th, on_change, (void *)&userdata);
+	cv::createTrackbar("High TRESHOLD", userdata.winname, &(userdata.high_th), userdata.max_th, on_change, (void *)&userdata);
+
+	on_change(0, (void *)&userdata);
+	cv::waitKey(0);
+}
+
 cv::Mat profile_of_row(const char *image_path, int row)
 {
 	cv::Mat image = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
@@ -451,10 +465,89 @@ std::vector<cv::Point2i> edge_points(const cv::Mat &image)
 	return std::vector<cv::Point2i>();
 }
 
-/* std::vector<cv::Point2i> mean_shift_clustering(std::vector<cv::Point2i> &points, float radius, int k, int max_iterations)
+std::vector<cv::Point2i> computeIntersections(const cv::Vec2f &line, const cv::Size2i &imgSize)
 {
-	for (size_t i = 0; i < max_iterations; i++)
-	{
+	std::vector<cv::Point2i> points;
+	float rho = line[0], theta = line[1];
+	double a = cos(theta), b = sin(theta);
+	double x0 = a * rho, y0 = b * rho;
+	cv::Point2i pt1, pt2;
 
+	pt1.x = cvRound(x0 + 1000 * (-b));
+	pt1.y = cvRound(y0 + 1000 * (a));
+	pt2.x = cvRound(x0 - 1000 * (-b));
+	pt2.y = cvRound(y0 - 1000 * (a));
+
+	// Clip line to image boundaries
+	cv::LineIterator it(cv::Mat(imgSize, CV_8UC1), pt1, pt2, 8);
+	for (int i = 0; i < it.count; i++, ++it)
+	{
+		cv::Point pt = it.pos();
+		if (pt.x >= 0 && pt.x < imgSize.width && pt.y >= 0 && pt.y < imgSize.height)
+		{
+			points.push_back(pt);
+		}
 	}
-} */
+	return points;
+}
+
+void poly_in_hough_lines(const cv::Mat &image, const cv::Mat &edges, cv::Mat &dest)
+{
+	if (image.empty())
+	{
+		printf("[ERROR]: Could not open image\n");
+		return;
+	}
+
+	std::vector<cv::Vec4f> lines;
+	cv::HoughLinesP(edges, lines, 1, CV_PI / 180, 130, 100, 40); // best param to detect the lines on the road
+
+	if (lines.size() < 2)
+	{
+		printf("[ERROR]: Less than two lines detected\n");
+		return;
+	}
+
+	// sort by strongest line
+	std::sort(lines.begin(), lines.end(), [](const cv::Vec4f &a, const cv::Vec4f &b)
+			  { return cv::norm(a) > cv::norm(b); });
+
+	dest = image.clone();
+
+	std::vector<cv::Point2i> polygon = {cv::Point2i(lines[0][0], lines[0][1]),
+										cv::Point2i(lines[0][2], lines[0][3]),
+										cv::Point2i(lines[1][0], lines[1][1]),
+										cv::Point2i(lines[1][2], lines[1][3])};
+
+	fillConvexPoly(dest, polygon, cv::Scalar(0, 0, 255), cv::LINE_4);
+}
+
+void poly_in_hough_circles(const cv::Mat &image, const cv::Mat &edges, cv::Mat &dest)
+{
+	if (image.empty())
+	{
+		printf("[ERROR]: Could not open image\n");
+		return;
+	}
+
+	std::vector<cv::Vec4f> circles;
+	cv::HoughCircles(edges, circles, cv::HOUGH_GRADIENT_ALT, 1, 100, 100, 0.7, 1, 30);
+
+	if (circles.size() < 1)
+	{
+		printf("[ERROR]: No circle detected\n");
+		return;
+	}
+
+	// sort by strongest circle
+	std::sort(circles.begin(), circles.end(), [](const cv::Vec4f &a, const cv::Vec4f &b)
+			  { return a[3] > b[3]; });
+
+	dest = image.clone();
+	for (size_t i = 0; i < circles.size(); i++)
+	{
+		cv::Point2i center = cv::Point2i(circles[i][0], circles[i][1]);
+		int radius = circles[i][2];
+		cv::circle(dest, center, radius, cv::Scalar(0, 255, 0), cv::LINE_AA);
+	}
+}
