@@ -16,30 +16,24 @@ int main(int argc, char **argv)
 	const int maxThreshold = 300;
 
 	cv::Mat original = cv::imread(image_path, cv::IMREAD_COLOR);
-	cv::Mat grayscale, edges;
-	cv::cvtColor(original, grayscale, cv::COLOR_BGR2GRAY);
+	cv::Mat hsv;
+	cv::cvtColor(original, hsv, cv::COLOR_BGR2HSV);
 
-	// cv::namedWindow("Canny", cv::WINDOW_AUTOSIZE);
+	// extract the yellow color part
+	cv::Scalar lower_yellow(20, 100, 100);
+	cv::Scalar upper_yellow(30, 255, 255);
 
-	cv::Mat thresh = apply_transformation(grayscale, threshold_transform, DEFPARAM(170));
-	display_image(thresh, "threshold");
-	// cv::medianBlur(grayscale, grayscale, 3);
-	// display_image(grayscale, "grayscale");
+	cv::Mat mask;
+	cv::inRange(hsv, lower_yellow, upper_yellow, mask);
+	cv::Mat mask_filtered;
+	cv::GaussianBlur(mask, mask, cv::Size(3, 3), 2, 2);
+	apply_filter(mask, mask_filtered, DEFKERNEL, median_filter);
 
-	TB_args args = {
-		.low_th = lowThreshold,
-		.high_th = highThreshold,
-		.max_th = maxThreshold,
-		.img = grayscale,
-		.edges = &edges,
-		.winname = "Canny",
-	};
-
-	// interact_trackbars(on_slide_canny, args);
+	display_image(mask_filtered, "yellow mask");
 
 	cv::Mat result;
-	poly_in_hough_circles(original, thresh, result);
-	display_image(result, "poly circle with hough lines");
+	poly_in_hough_circles(original, mask_filtered, result);
+	display_image(result, "poly circle with hough circles");
 
 	return 0;
 }

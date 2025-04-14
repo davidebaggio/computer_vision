@@ -531,7 +531,7 @@ void poly_in_hough_circles(const cv::Mat &image, const cv::Mat &edges, cv::Mat &
 	}
 
 	std::vector<cv::Vec4f> circles;
-	cv::HoughCircles(edges, circles, cv::HOUGH_GRADIENT_ALT, 1, 100, 100, 0.7, 1, 30);
+	HoughCircles(edges, circles, cv::HOUGH_GRADIENT, 1, 20, 100, 20, 5, 40);
 
 	if (circles.size() < 1)
 	{
@@ -550,4 +550,63 @@ void poly_in_hough_circles(const cv::Mat &image, const cv::Mat &edges, cv::Mat &
 		int radius = circles[i][2];
 		cv::circle(dest, center, radius, cv::Scalar(0, 255, 0), cv::LINE_AA);
 	}
+}
+
+void segment_sky(const cv::Mat &image, cv::Mat &dest)
+{
+	if (image.empty())
+	{
+		printf("[ERROR]: Could not open image\n");
+		return;
+	}
+
+	if (image.channels() < 3)
+	{
+		printf("[ERROR]: original BGR image is required\n");
+		return;
+	}
+
+	cv::Scalar lower_sky(200, 140, 85); // Adjusted for the sky in the image
+	cv::Scalar upper_sky(255, 245, 175);
+
+	inRange(image, lower_sky, upper_sky, dest);
+}
+
+void segment_sky_with_kmeans(const cv::Mat &image, cv::Mat &dest)
+{
+	cv::Mat samples = image.reshape(1, image.rows * image.cols);
+	samples.convertTo(samples, CV_32F);
+
+	int K = 5;
+	cv::Mat labels, centers;
+	kmeans(samples, K, labels,
+		   cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 10, 1.0),
+		   3, cv::KMEANS_PP_CENTERS, centers);
+
+	cv::Vec3f ref_color(230, 190, 130); // Adjusted for the sky in the image
+	int sky_cluster = 0;
+	float min_dst = FLT_MAX;
+
+	for (int i = 0; i < K; ++i)
+	{
+		cv::Vec3f center = centers.at<cv::Vec3f>(i);
+		float distance = cv::norm(center - ref_color); // Euclidean distance
+		if (distance < min_dst)
+		{
+			min_dst = distance;
+			sky_cluster = i;
+		}
+	}
+
+	cv::Mat mask(image.size(), CV_8UC1);
+	for (int y = 0; y < image.rows; ++y)
+	{
+		for (int x = 0; x < image.cols; ++x)
+		{
+			int cluster_id = labels.at<int>(y * image.cols + x);
+			mask.at<uchar>(y, x) = (cluster_id == sky_cluster) ? 255 : 0;
+		}
+	}
+
+	dest = mask;
 }

@@ -69,4 +69,7 @@ std::vector<cv::Point2i> computeIntersections(const cv::Vec2f &line, const cv::S
 void poly_in_hough_lines(const cv::Mat &image, const cv::Mat &edges, cv::Mat &dest);
 void poly_in_hough_circles(const cv::Mat &image, const cv::Mat &edges, cv::Mat &dest);
 
+void segment_sky(const cv::Mat &image, cv::Mat &dest);
+void segment_sky_with_kmeans(const cv::Mat &image, cv::Mat &dest);
+
 #endif // IMAGE_FUNC_HPP
